@@ -78,11 +78,43 @@ func showUFWStatus() {
 	}
 }
 
+// Enable/Disable UFW
+func toggleUFW(enable bool) {
+	action := "disable"
+	if enable {
+		action = "enable"
+	}
+	
+	cmd := exec.Command("sudo", "ufw", action)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Failed to %s UFW: %v\n", action, err)
+		return
+	}
+	fmt.Printf("UFW %sd successfully.\n", action)
+}
+
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "ufw-cli",
 		Short: "A CLI tool to manage UFW (Uncomplicated Firewall)",
-		Long:  "ufw-cli helps users install, configure, and manage UFW for their servers.",
+		Long: `ufw-cli helps users install, configure, and manage UFW for their servers.
+		
+Basic commands:
+  install    - Install UFW if not already present
+  setup      - Configure basic UFW rules (SSH, HTTP, HTTPS)
+  configure  - Add custom port rules
+  status     - Show current UFW status
+  enable     - Enable the UFW firewall
+  disable    - Disable the UFW firewall
+
+Example usage:
+  ufw-cli install     # Install UFW
+  ufw-cli setup       # Set up basic rules
+  ufw-cli configure   # Add custom ports
+  ufw-cli enable      # Turn on the firewall
+  ufw-cli status      # Check firewall status`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Welcome to ufw-cli! Use --help to see available commands.")
 		},
@@ -124,8 +156,26 @@ func main() {
 		},
 	}
 
+	// Enable Command
+	var enableCmd = &cobra.Command{
+		Use:   "enable",
+		Short: "Enable UFW",
+		Run: func(cmd *cobra.Command, args []string) {
+			toggleUFW(true)
+		},
+	}
+
+	// Disable Command
+	var disableCmd = &cobra.Command{
+		Use:   "disable",
+		Short: "Disable UFW",
+		Run: func(cmd *cobra.Command, args []string) {
+			toggleUFW(false)
+		},
+	}
+
 	// Add commands to root
-	rootCmd.AddCommand(installCmd, setupCmd, configureCmd, statusCmd)
+	rootCmd.AddCommand(installCmd, setupCmd, configureCmd, statusCmd, enableCmd, disableCmd)
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {

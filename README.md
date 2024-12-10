@@ -1,27 +1,21 @@
-# UFW CLI Tool
+# ufw-cli
 
-A command-line interface tool to simplify the management of UFW (Uncomplicated Firewall) on Linux systems. This tool provides easy-to-use commands for installing, configuring, and managing UFW firewall rules.
+A command-line interface tool to simplify the management of UFW (Uncomplicated Firewall) on Linux systems.
 
 ## Features
 
-- UFW installation check and automated installation
-- Basic firewall rules setup (SSH, HTTP, HTTPS)
+- Easy UFW installation
+- Quick setup of common firewall rules
 - Custom port configuration
-- Firewall status checking
-- Interactive command-line interface
-
-## Prerequisites
-
-- Go 1.x or higher
-- Linux-based system (Debian/Ubuntu recommended)
-- Sudo privileges
+- Simple enable/disable commands
+- Status checking
 
 ## Installation
 
 To install the tool globally, run the following commands:
 
 ```bash
-go install github.com/thatbeautifuldream/ufw-cli
+go install github.com/thatbeautifuldream/ufw-cli@latest
 ```
 
 ### Usage
