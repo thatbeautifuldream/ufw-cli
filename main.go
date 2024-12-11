@@ -32,7 +32,7 @@ func installUFW() {
 func setupUFW() {
 	fmt.Println("Setting up basic UFW rules...")
 	commands := [][]string{
-		{"ufw", "enable"},
+		{"ufw", "--force", "enable"},
 		{"ufw", "allow", "ssh"},
 		{"ufw", "allow", "http"},
 		{"ufw", "allow", "https"},
@@ -85,7 +85,14 @@ func toggleUFW(enable bool) {
 		action = "enable"
 	}
 	
-	cmd := exec.Command("sudo", "ufw", action)
+	cmdArgs := []string{"ufw"}
+	if enable {
+		cmdArgs = append(cmdArgs, "--force", "enable")
+	} else {
+		cmdArgs = append(cmdArgs, "disable")
+	}
+	
+	cmd := exec.Command("sudo", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
