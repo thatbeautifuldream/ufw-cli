@@ -10,12 +10,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var dryRun bool
+
 // Install UFW if not present
 func installUFW() {
 	fmt.Println("Checking if UFW is installed...")
 	if _, err := exec.Command("ufw", "--version").Output(); err != nil {
 		fmt.Println("UFW not found. Installing...")
-		cmd := exec.Command("sudo", "apt-get", "install", "ufw", "-y") // Assuming Debian-based systems
+		if dryRun {
+			fmt.Println("[Dry Run] Would execute: sudo apt-get install ufw -y")
+			return
+		}
+		cmd := exec.Command("sudo", "apt-get", "install", "ufw", "-y")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
@@ -38,6 +44,10 @@ func setupUFW() {
 		{"ufw", "allow", "https"},
 	}
 	for _, cmdArgs := range commands {
+		if dryRun {
+			fmt.Printf("[Dry Run] Would execute: sudo %v\n", strings.Join(cmdArgs, " "))
+			continue
+		}
 		cmd := exec.Command("sudo", cmdArgs...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -57,6 +67,10 @@ func configureAdditionalPorts() {
 	for _, port := range ports {
 		port = strings.TrimSpace(port)
 		if port != "" {
+			if dryRun {
+				fmt.Printf("[Dry Run] Would execute: sudo ufw allow %s\n", port)
+				continue
+			}
 			cmd := exec.Command("sudo", "ufw", "allow", port)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -84,14 +98,19 @@ func toggleUFW(enable bool) {
 	if enable {
 		action = "enable"
 	}
-	
+
 	cmdArgs := []string{"ufw"}
 	if enable {
 		cmdArgs = append(cmdArgs, "--force", "enable")
 	} else {
 		cmdArgs = append(cmdArgs, "disable")
 	}
-	
+
+	if dryRun {
+		fmt.Printf("[Dry Run] Would execute: sudo %v\n", strings.Join(cmdArgs, " "))
+		return
+	}
+
 	cmd := exec.Command("sudo", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -100,6 +119,44 @@ func toggleUFW(enable bool) {
 		return
 	}
 	fmt.Printf("UFW %sd successfully.\n", action)
+}
+
+// Reset UFW
+func resetUFW() {
+	if dryRun {
+		fmt.Println("[Dry Run] Would execute: sudo ufw reset")
+		return
+	}
+	cmd := exec.Command("sudo", "ufw", "reset")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Println("Failed to reset UFW:", err)
+		return
+	}
+	fmt.Println("UFW reset successfully.")
+}
+
+// Set default policies
+func setDefaultPolicies() {
+	if dryRun {
+		fmt.Println("[Dry Run] Would execute: sudo ufw default deny incoming")
+		fmt.Println("[Dry Run] Would execute: sudo ufw default allow outgoing")
+		return
+	}
+	cmds := [][]string{
+		{"ufw", "default", "deny", "incoming"},
+		{"ufw", "default", "allow", "outgoing"},
+	}
+	for _, cmdArgs := range cmds {
+		cmd := exec.Command("sudo", cmdArgs...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("Failed to set default policy %v: %v\n", cmdArgs, err)
+		}
+	}
+	fmt.Println("Default policies set successfully.")
 }
 
 func main() {
@@ -115,6 +172,8 @@ Basic commands:
   status     - Show current UFW status
   enable     - Enable the UFW firewall
   disable    - Disable the UFW firewall
+  reset      - Reset UFW to default settings
+  default    - Set default policies for incoming and outgoing traffic
 
 Example usage:
   ufw-cli install     # Install UFW
@@ -126,6 +185,8 @@ Example usage:
 			fmt.Println("Welcome to ufw-cli! Use --help to see available commands.")
 		},
 	}
+
+	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Simulate the command without executing")
 
 	// Install Command
 	var installCmd = &cobra.Command{
@@ -181,8 +242,26 @@ Example usage:
 		},
 	}
 
+	// Reset Command
+	var resetCmd = &cobra.Command{
+		Use:   "reset",
+		Short: "Reset UFW to default settings",
+		Run: func(cmd *cobra.Command, args []string) {
+			resetUFW()
+		},
+	}
+
+	// Default Policies Command
+	var defaultCmd = &cobra.Command{
+		Use:   "default",
+		Short: "Set default policies for incoming and outgoing traffic",
+		Run: func(cmd *cobra.Command, args []string) {
+			setDefaultPolicies()
+		},
+	}
+
 	// Add commands to root
-	rootCmd.AddCommand(installCmd, setupCmd, configureCmd, statusCmd, enableCmd, disableCmd)
+	rootCmd.AddCommand(installCmd, setupCmd, configureCmd, statusCmd, enableCmd, disableCmd, resetCmd, defaultCmd)
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {

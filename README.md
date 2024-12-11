@@ -1,6 +1,6 @@
 # ufw-cli
 
-A command-line interface tool to simplify the management of UFW (Uncomplicated Firewall) on Linux systems.
+A command-line interface tool to simplify the management of UFW (Uncomplicated Firewall) on Linux systems. For more detailed information on UFW, please refer to the [UFW documentation](https://help.ubuntu.com/community/UFW).
 
 ## Features
 
