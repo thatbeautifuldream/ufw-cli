@@ -42,6 +42,7 @@ func setupUFW() {
 		{"ufw", "allow", "ssh"},
 		{"ufw", "allow", "http"},
 		{"ufw", "allow", "https"},
+		{"ufw", "reload"},
 	}
 	for _, cmdArgs := range commands {
 		if dryRun {
